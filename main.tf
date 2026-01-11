@@ -73,7 +73,7 @@ module "alb" {
   }
 
   tags = {
-    Environment = "Dev"
+    Environment = "dev"
   }
 }
 
