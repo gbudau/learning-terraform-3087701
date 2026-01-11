@@ -67,7 +67,7 @@ module "alb" {
       protocol        = "HTTP"
 
       forward = {
-        target_group_ = "ex-instance"
+        target_group_key = "ex-instance"
       }
     }
   }
