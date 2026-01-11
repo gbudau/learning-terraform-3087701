@@ -35,11 +35,20 @@ module "autoscaling" {
   instance_type       = var.instance_type
 
   vpc_zone_identifier = module.blog_vpc.public_subnets
-  security_groups     = [module.blog_sg.security_group_id]
+
+  network_interfaces = [
+    {
+      device_index                = 0
+      associate_public_ip_address = true
+      security_groups             = [module.blog_sg.security_group_id]
+    }
+  ]
 
   # Installs Nginx and creates a custom page
   user_data = base64encode(<<-EOF
     #!/bin/bash
+    sleep 10
+    export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get install -y nginx
     echo '<h1>Hello from Terraform Nginx!</h1>' > /var/www/html/index.html
