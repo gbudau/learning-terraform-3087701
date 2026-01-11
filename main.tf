@@ -1,17 +1,11 @@
 data "aws_ami" "app_ami" {
   most_recent = true
+  owners      = ["099720109477"] # Canonical
 
   filter {
     name   = "name"
-    values = ["bitnami-tomcat-*-x86_64-hvm-ebs-nami"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
   }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["979382823631"] # Bitnami
 }
 
 module "blog_vpc" {
@@ -42,6 +36,17 @@ module "autoscaling" {
 
   vpc_zone_identifier = module.blog_vpc.public_subnets
   security_groups     = [module.blog_sg.security_group_id]
+
+  # Installs Nginx and creates a custom page
+  user_data = base64encode(<<-EOF
+    #!/bin/bash
+    apt-get update
+    apt-get install -y nginx
+    echo '<h1>Hello from Terraform Nginx!</h1>' > /var/www/html/index.html
+    systemctl enable nginx
+    systemctl start nginx
+  EOF
+  )
 
   traffic_source_attachments = {
     ex-alb = {
