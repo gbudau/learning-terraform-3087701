@@ -29,20 +29,29 @@ module "blog_vpc" {
   }
 }
 
-resource "aws_instance" "blog" {
-  ami           = data.aws_ami.app_ami.id
-  instance_type = var.instance_type
+module "autoscaling" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "9.1.0"
 
-  vpc_security_group_ids = [module.blog_sg.security_group_id]
+  name     = "blog"
+  min_size = 1
+  max_size = 2
 
-  subnet_id = module.blog_vpc.public_subnets[0]
+  image_id            = data.aws_ami.app_ami.id
+  instance_type       = var.instance_type
 
-  tags = {
-    Name = "Learning Terraform"
+  vpc_zone_identifier = module.blog_vpc.public_subnets
+  security_groups     = [module.blog_sg.security_group_id]
+
+  traffic_source_attachments = {
+    ex-alb = {
+      traffic_source_identifier = module.blog_alb.target_groups["ex-instance"].arn
+      traffic_source_type = "elbv2"
+    }
   }
 }
 
-module "alb" {
+module "blog_alb" {
   source = "terraform-aws-modules/alb/aws"
 
   name    = "blog-alb"
@@ -57,7 +66,6 @@ module "alb" {
       protocol         = "HTTP"
       port             = 80
       target_type      = "instance"
-      target_id        = aws_instance.blog.id
     }
   }
 
